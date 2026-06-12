@@ -14,7 +14,8 @@
 set -e
 
 # ---- 配置 ----
-PROJECT_DIR="$(cd "$(dirname "$0")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 DIST_DIR="$PROJECT_DIR/dist"
 SERVER_PORT=8899
 SERVER_SCRIPT="$PROJECT_DIR/server.cjs"

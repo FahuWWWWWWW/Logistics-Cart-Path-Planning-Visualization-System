@@ -4,7 +4,8 @@
 #  双击或在终端运行即可
 #  ============================================================
 
-PROJECT_DIR="$(cd "$(dirname "$0")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 LOG_FILE="$PROJECT_DIR/server.log"
 
 # 检查 dist 目录
