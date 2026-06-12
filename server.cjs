@@ -5,8 +5,6 @@ const { exec } = require('child_process');
 
 const DIST = path.join(__dirname, 'dist');
 
-const DIST = path.join(__dirname, 'dist');
-
 const mimeTypes = {
   '.html': 'text/html; charset=utf-8',
   '.css':  'text/css; charset=utf-8',
