@@ -468,7 +468,7 @@ MIT © 2026 FahuWWWWWWW
 ## 📧 联系方式
 
 - GitHub Issues: [提交问题](https://github.com/FahuWWWWWWW/Logistics-Cart-Path-Planning-Visualization-System/issues)
-- Email: [联系作者](mailto:fahuwwwwww@example.com)
+- Email: fahu.041216@qq.com
 
 ---
 
