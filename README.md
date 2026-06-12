@@ -11,6 +11,14 @@
 
 ---
 
+## 🖼️ 界面预览
+
+![物流小车路径规划可视化系统 - 深色主题](docs/images/screenshot.png)
+
+> 深色主题下的完整界面：控制面板（左）+ Canvas 地图（中）+ 串口/协议面板（右）+ 浮动日志/视频面板（下）
+
+---
+
 ## ✨ 功能一览
 
 | 功能 | 说明 |
@@ -468,7 +476,7 @@ MIT © 2026 FahuWWWWWWW
 ## 📧 联系方式
 
 - GitHub Issues: [提交问题](https://github.com/FahuWWWWWWW/Logistics-Cart-Path-Planning-Visualization-System/issues)
-- Email: fahu.041216@qq.com
+- Email: fahu.041216@gmail.com
 
 ---
 
