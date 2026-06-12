@@ -235,22 +235,88 @@ Logistics-Cart-Path-Planning-Visualization-System/
 
 ## 🔌 串口通信协议
 
-### 上位机 → 下位机（指令）
+上位机与下位机之间通过 **JSON 文本协议** 通信，每帧以 `\n` 结尾。
+
+### 通用帧格式
 
 ```json
-{"cmd":"set_target","x":10,"y":10}
-{"cmd":"plan_path"}
-{"cmd":"start"}
-{"cmd":"stop"}
+{"ver":"1.0.0","type":"FRAME_TYPE","seq":1,"ts":1000,"data":{...}}
 ```
 
-### 下位机 → 上位机（状态上报）
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `ver` | string | 协议版本号，当前为 `1.0.0` |
+| `type` | string | 帧类型（见下方帧类型表） |
+| `seq` | number | 帧序号，每发送一帧递增 |
+| `ts` | number | 发送时时间戳（ms） |
+| `data` | object | 帧数据负载，各帧类型不同 |
 
+### 上位机 → 下位机（发送帧）
+
+| 帧类型 `type` | 说明 | `data` 关键字段 |
+|---------------|------|----------------|
+| `START` | 启动指令 | `parking`: 1\|2，`task_mode`: auto/manual |
+| `SET_TARGET` | 设置目标坐标 | `x`, `y`，可选 `zone` |
+| `SET_PATH` | 下发规划路径 | `path`: 坐标数组，`step_index`，`step_name` |
+| `REQ_PATH` | 请求下位机规划 | `start`，`end`，`obstacles` |
+| `SET_OBSTACLES` | 设置障碍物 | `obs`: 坐标数组，`count`，`diameter_mm` |
+| `REQ_STATUS` | 请求状态上报 | （无附加数据） |
+| `EMERGENCY_STOP` | 紧急停止 | （无附加数据） |
+| `SET_SPEED` | 设置速度 | `speed`(mm/s)，`turn_speed`(°/s) |
+| `HEARTBEAT` | 心跳包（1s 周期） | （无附加数据） |
+| `QR_READ` | 指令读取二维码 | `parking_zone`: 1\|2 |
+| `GRAB` | 抓取物料 | `material_id`，`color`，`from_zone` |
+| `PLACE` | 放置物料 | `material_id`，`color`，`to_zone`，`slot`，`is_stack` |
+| `SET_PARKING` | 设置启停区 | `parking`: 1\|2，`x`，`y` |
+| `RESET` | 复位指令 | （无附加数据） |
+| `SET_TASK` | 设置任务参数 | `task_id`，`colors`[]，`order`[] |
+
+**示例：设置目标坐标**
 ```json
-{"type":"status","x":0,"y":0,"angle":90,"status":"moving"}
-{"type":"path","path":[...],"timeCost":10}
-{"type":"error","code":"OBSTACLE_BLOCKED"}
+{"ver":"1.0.0","type":"SET_TARGET","seq":2,"ts":2000,"data":{"x":44,"y":24,"zone":"qrcode"}}
 ```
+
+**示例：启动指令**
+```json
+{"ver":"1.0.0","type":"START","seq":1,"ts":1000,"data":{"parking":1,"task_mode":"auto"}}
+```
+
+**示例：紧急停止**
+```json
+{"ver":"1.0.0","type":"EMERGENCY_STOP","seq":7,"ts":7000,"data":{}}
+```
+
+### 下位机 → 上位机（接收帧）
+
+| 帧类型 `type` | 说明 | `data` 关键字段 |
+|---------------|------|----------------|
+| `STATUS` | 状态上报（200ms 周期） | `x`, `y`, `angle`, `speed`, `status`, `step`, `uptime` |
+| `OBSTACLE` | 障碍物检测上报 | `obs`[]，`source`，`confidence` |
+| `PATH_RESULT` | 下位机规划结果 | `path`[]，`length_mm`，`node_count`，`time_cost` |
+| `QR_TASK` | 二维码任务内容 | `task_id`，`colors`[]，`batch1_order`[]，`batch2_order`[] |
+| `TASK_CODE` | 任务码原始内容 | `raw`: 如 `"156+123+516+231"`，`source` |
+| `GRABBED` | 抓取成功上报（新版） | `batch`，`material_idx`，`color_id`，`success` |
+| `PLACED` | 放置成功上报（新版） | `batch`，`ring_level`，`ring_score`，`color_id`，`success` |
+| `GRAB_RESULT` | 抓取结果（旧版兼容） | `success`，`material_id`，`color`，`confidence` |
+| `PLACE_RESULT` | 放置结果（旧版兼容） | `success`，`zone`，`slot`，`score` |
+| `ACK` | 通用应答 | `req_seq`，`req_type`，`result`: ok/fail |
+| `HEARTBEAT_ACK` | 心跳应答 | （无附加数据） |
+| `ERROR` | 错误上报 | `code`，`msg`，`detail` |
+| `ARRIVED` | 到达目标通知 | `x`，`y`，`zone`，`step` |
+| `BATTERY` | 电池状态 | `voltage`，`percentage`，`is_charging` |
+| `SENSOR_DATA` | 传感器原始数据 | `lidar`[]，`ir_front`，`ir_left`，`ir_right` |
+
+**示例：状态上报**
+```json
+{"ver":"1.0.0","type":"STATUS","seq":1,"ts":1000,"data":{"x":24.5,"y":15.0,"angle":90,"speed":500,"status":"moving","step":2,"uptime":5000}}
+```
+
+**示例：错误上报**
+```json
+{"ver":"1.0.0","type":"ERROR","seq":9,"ts":9000,"data":{"code":101,"msg":"路径规划失败","detail":"目标不可达"}}
+```
+
+> 📋 **完整协议定义**见源代码 [`src/types/index.ts`](src/types/index.ts) 中的 `PROTOCOL_DESC` 常量，包含每个帧类型的字段说明和示例。
 
 ---
 
