@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>物流小车路径规划可视化系统</title>
+    <script>
+      // 在 React 加载前立即应用深色主题，彻底防止白色闪烁
+      (function() {
+        var theme = localStorage.getItem('theme') || 'dark';
+        var root = document.documentElement;
+        if (theme === 'dark') {
+          root.classList.add('dark');
+        } else if (theme === 'system') {
+          if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            root.classList.add('dark');
+          }
+        }
+        // light 模式：不添加 dark 类
+      })();
+    </script>
+    <style>
+      /* 深色默认背景，防止白闪 */
+      html.dark body { background-color: #1a1a2e; }
+      html:not(.dark) body { background-color: #f0f2f5; }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

@@ -1,0 +1,4 @@
+  </div>
+          <div className="flex justify-between">
+            <span>安全膨胀:</span>
+            <span className="font-mono text-orange-600">{Math.ceil(config.carSafeRadius / config.gridSizeMm)
