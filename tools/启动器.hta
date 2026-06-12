@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>物流小车路径规划系统 - 启动器</title>
+    <HTA:APPLICATION 
+        APPLICATIONNAME="物流小车路径规划系统"
+        ID="LogisticsCart"
+        VERSION="2.0"
+        BORDER="dialog"
+        BORDERSTYLE="normal"
+        CAPTION="yes"
+        CONTEXTMENU="no"
+        INNERBORDER="no"
+        MAXIMIZEBUTTON="no"
+        MINIMIZEBUTTON="yes"
+        NAVIGABLE="no"
+        SCROLL="no"
+        SELECTION="no"
+        SHOWINTASKBAR="yes"
+        SINGLEINSTANCE="no"
+        SYSMENU="yes"
+        WINDOWSTATE="normal"
+    />
+    <style>
+        * { margin: 0; padding: 0; }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            font-family: 'Microsoft YaHei', 'Segoe UI', Tahoma, sans-serif;
+            background: #1a1a2e;
+            color: #ffffff;
+        }
+
+        /* IE 渐变回退 */
+        body {
+            filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#0f0c29', endColorstr='#24243e', GradientType=1);
+        }
+
+        /* 居中布局 - 兼容 IE7+ */
+        .outer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            text-align: center;
+        }
+
+        .outer .helper {
+            display: inline-block;
+            height: 100%;
+            vertical-align: middle;
+        }
+
+        .container {
+            display: inline-block;
+            vertical-align: middle;
+            width: 440px;
+            text-align: left;
+            background: #16213e;
+            border: 1px solid #3a3a5c;
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+        }
+
+        /* 头部 */
+        .header {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        .logo {
+            width: 64px;
+            height: 64px;
+            margin: 0 auto 15px;
+            background: #667eea;
+            border-radius: 16px;
+            line-height: 64px;
+            font-size: 32px;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 22px;
+            color: #ffffff;
+            margin-bottom: 6px;
+        }
+
+        .subtitle {
+            font-size: 12px;
+            color: #a8a8c8;
+            letter-spacing: 2px;
+        }
+
+        /* 状态面板 */
+        .status-panel {
+            background: #0f0f1e;
+            border: 1px solid #2a2a4a;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 20px;
+        }
+
+        .status-header {
+            margin-bottom: 10px;
+        }
+
+        .status-label {
+            font-size: 11px;
+            color: #8888aa;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            margin-left: 10px;
+            font-size: 12px;
+            color: #ffffff;
+        }
+
+        .status-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #666;
+            vertical-align: middle;
+            margin-right: 6px;
+        }
+
+        .status-dot.active {
+            background: #4CAF50;
+        }
+
+        .status-url {
+            font-size: 13px;
+            color: #aaaacc;
+            background: #0a0a18;
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: 1px solid #1a1a3a;
+            font-family: Consolas, 'Courier New', monospace;
+            display: none;
+        }
+
+        /* 按钮组 */
+        .btn-group {
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 12px 16px;
+            margin-bottom: 10px;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: bold;
+            color: white;
+            cursor: pointer;
+            text-align: center;
+            font-family: 'Microsoft YaHei', 'Segoe UI', Tahoma, sans-serif;
+        }
+
+        .btn-start {
+            background: #667eea;
+        }
+
+        .btn-start:hover:not(:disabled) {
+            background: #5a6fd6;
+        }
+
+        .btn-browser {
+            background: #2196F3;
+        }
+
+        .btn-browser:hover:not(:disabled) {
+            background: #1e88d6;
+        }
+
+        .btn-stop {
+            background: #f44336;
+        }
+
+        .btn-stop:hover:not(:disabled) {
+            background: #e53935;
+        }
+
+        .btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            filter: alpha(opacity=40);
+        }
+
+        /* 日志面板 */
+        .log-panel {
+            background: #0f0f1e;
+            border: 1px solid #1a1a3a;
+            border-radius: 10px;
+            padding: 12px;
+            max-height: 100px;
+            overflow-y: auto;
+            font-size: 11px;
+            font-family: Consolas, 'Courier New', monospace;
+            color: #8888aa;
+        }
+
+        .log-entry {
+            padding: 2px 0;
+        }
+
+        .log-entry::before {
+            content: '> ';
+            color: #667eea;
+            font-weight: bold;
+        }
+
+        /* 页脚 */
+        .footer {
+            text-align: center;
+            margin-top: 15px;
+            font-size: 10px;
+            color: #666688;
+            letter-spacing: 1px;
+        }
+
+        /* 加载动画（兼容 IE） */
+        .spinner {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-top-color: #667eea;
+            border-radius: 50%;
+        }
+    </style>
+</head>
+<body>
+    <div class="outer">
+        <span class="helper"></span>
+        <div class="container">
+            <div class="header">
+                <div class="logo">&#128663;</div>
+                <h1>物流小车路径规划系统</h1>
+                <div class="subtitle">2027工创赛 &middot; 智能+命题</div>
+            </div>
+
+            <div class="status-panel" id="statusPanel">
+                <div class="status-header">
+                    <span class="status-label">服务器状态</span>
+                    <span class="status-indicator">
+                        <span class="status-dot" id="statusDot"></span>
+                        <span id="statusText">未启动</span>
+                    </span>
+                </div>
+                <div class="status-url" id="statusUrl">
+                    http://localhost:8899
+                </div>
+            </div>
+
+            <div class="btn-group">
+                <button class="btn btn-start" id="btnStart" onclick="startServer()">
+                    &#9654; 启动系统
+                </button>
+
+                <button class="btn btn-browser" id="btnBrowser" onclick="openBrowser()" disabled>
+                    &#127760; 打开浏览器
+                </button>
+
+                <button class="btn btn-stop" id="btnStop" onclick="stopServer()" disabled>
+                    &#9632; 停止系统
+                </button>
+            </div>
+
+            <div class="log-panel" id="logPanel">
+                <div class="log-entry">就绪，等待启动...</div>
+            </div>
+
+            <div class="footer">
+                V2.0 &middot; 2027工创赛专用
+            </div>
+        </div>
+    </div>
+
+    <script>
+        var shell = new ActiveXObject("WScript.Shell");
+        var fso = new ActiveXObject("Scripting.FileSystemObject");
+        var logPanel = document.getElementById('logPanel');
+        var statusPanel = document.getElementById('statusPanel');
+        var statusDot = document.getElementById('statusDot');
+        var statusText = document.getElementById('statusText');
+        var statusUrl = document.getElementById('statusUrl');
+        var btnStart = document.getElementById('btnStart');
+        var btnStop = document.getElementById('btnStop');
+        var btnBrowser = document.getElementById('btnBrowser');
+        var serverPort = 8899;
+
+        // 设置窗口大小并居中
+        window.resizeTo(560, 640);
+        window.moveTo(Math.round((screen.width - 560) / 2), Math.round((screen.height - 640) / 2));
+
+        function log(msg) {
+            var entry = document.createElement('div');
+            entry.className = 'log-entry';
+            entry.innerHTML = msg;
+            logPanel.appendChild(entry);
+            logPanel.scrollTop = logPanel.scrollHeight;
+        }
+
+        function updateStatus(running) {
+            if (running) {
+                statusDot.className = 'status-dot active';
+                statusText.innerHTML = '运行中';
+                statusUrl.style.display = 'block';
+                btnStart.disabled = true;
+                btnStop.disabled = false;
+                btnBrowser.disabled = false;
+            } else {
+                statusDot.className = 'status-dot';
+                statusText.innerHTML = '未启动';
+                statusUrl.style.display = 'none';
+                btnStart.disabled = false;
+                btnStop.disabled = true;
+                btnBrowser.disabled = true;
+            }
+        }
+
+        function getProjectDir() {
+            var scriptPath = location.pathname.replace(/%20/g, ' ').replace(/\//g, '\\');
+            if (scriptPath.charAt(0) === '\\') {
+                scriptPath = scriptPath.substring(1);
+            }
+            var scriptDir = fso.GetParentFolderName(scriptPath);
+            return fso.GetParentFolderName(scriptDir);
+        }
+
+        function checkDistFolder() {
+            var projectDir = getProjectDir();
+            var distPath = projectDir + '\\dist\\index.html';
+            return fso.FileExists(distPath);
+        }
+
+        function startServer() {
+            if (!checkDistFolder()) {
+                alert('错误: dist 文件夹不存在！\n请先运行: npm run build');
+                return;
+            }
+
+            log('正在启动服务器...');
+            btnStart.innerHTML = '<span class="spinner"></span> 启动中...';
+            btnStart.disabled = true;
+
+            try {
+                shell.Run('taskkill /F /IM node.exe', 0, true);
+                log('已清理旧进程');
+            } catch(e) {}
+
+            var projectDir = getProjectDir();
+            var serverPath = projectDir + '\\server.cjs';
+
+            try {
+                shell.Run('node "' + serverPath + '"', 0, false);
+                log('服务器进程已启动');
+
+                setTimeout(function() {
+                    checkServer();
+                }, 2000);
+            } catch(e) {
+                log('启动失败: ' + e.message);
+                alert('启动失败！\n请确保 Node.js 已正确安装。');
+                btnStart.innerHTML = '&#9654; 启动系统';
+                btnStart.disabled = false;
+            }
+        }
+
+        function checkServer() {
+            var xmlhttp = new ActiveXObject("MSXML2.XMLHTTP");
+            try {
+                xmlhttp.Open("GET", "http://localhost:" + serverPort, false);
+                xmlhttp.Send();
+                log('&#10004; 服务器启动成功！');
+                btnStart.innerHTML = '&#9654; 启动系统';
+                updateStatus(true);
+            } catch(e) {
+                log('等待服务器就绪...');
+                setTimeout(function() {
+                    checkServer();
+                }, 1000);
+            }
+        }
+
+        function openBrowser() {
+            log('正在打开浏览器...');
+            try {
+                shell.Run('http://localhost:' + serverPort);
+            } catch(e) {
+                shell.Run('cmd /c start http://localhost:' + serverPort);
+            }
+        }
+
+        function stopServer() {
+            if (!confirm('确定要停止服务器吗？\n\n停止后浏览器将无法访问系统。')) {
+                return;
+            }
+
+            log('正在停止服务器...');
+            try {
+                shell.Run('taskkill /F /IM node.exe', 0, true);
+                log('&#10004; 服务器已停止');
+                updateStatus(false);
+            } catch(e) {
+                log('停止失败: ' + e.message);
+            }
+        }
+
+        window.onbeforeunload = function() {
+            try {
+                shell.Run('taskkill /F /IM node.exe', 0, true);
+            } catch(e) {}
+        };
+    </script>
+</body>
+</html>
