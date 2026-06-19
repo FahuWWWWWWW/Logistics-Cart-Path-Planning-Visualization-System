@@ -20,6 +20,13 @@ const formatData = (data: string): { formatted: string; isJSON: boolean } => {
   }
 };
 
+// 判断是否为心跳包
+const isHeartbeat = (frameType?: string): boolean => {
+  if (!frameType) return false;
+  const t = frameType.toUpperCase();
+  return t === 'HEARTBEAT' || t === 'HEARTBEAT_ACK';
+};
+
 // 获取帧类型对应的颜色、图标和背景色
 const getFrameStyle = (frameType?: string): { icon: string; color: string; bgColor: string } => {
   if (!frameType) return { icon: '📄', color: 'text-gray-700 dark:text-gray-300', bgColor: 'bg-gray-100 dark:bg-gray-800' };
@@ -73,6 +80,7 @@ const LogPanel: React.FC<LogPanelProps> = ({
   const [filter, setFilter] = useState<'all' | 'RX' | 'TX'>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [expandedLogs, setExpandedLogs] = useState<Set<number>>(new Set());
+  const [hideHeartbeat, setHideHeartbeat] = useState(true); // 默认隐藏心跳
 
   // 自动滚动到底部
   useEffect(() => {
@@ -83,6 +91,7 @@ const LogPanel: React.FC<LogPanelProps> = ({
 
   // 过滤日志
   const filteredLogs = logs.filter((log) => {
+    if (hideHeartbeat && isHeartbeat(log.frameType)) return false;
     if (filter !== 'all' && log.direction !== filter) return false;
     if (searchTerm.trim()) {
       const term = searchTerm.toLowerCase();
@@ -108,33 +117,36 @@ const LogPanel: React.FC<LogPanelProps> = ({
     });
   };
 
-  // 渲染单条日志
+  // 渲染单条日志（心跳包精简显示）
   const renderLogEntry = (log: LogEntry) => {
     const { formatted, isJSON } = formatData(log.data);
     const isExpanded = expandedLogs.has(log.id);
     const style = getFrameStyle(log.frameType);
     const isRX = log.direction === 'RX';
+    const isHb = isHeartbeat(log.frameType);
     
     return (
       <div
         key={log.id}
         className={`mb-1 rounded-lg border transition-all duration-200 ${
-          isRX 
-            ? 'bg-green-50/30 dark:bg-green-900/10 border-green-200 dark:border-green-800/50' 
-            : 'bg-blue-50/30 dark:bg-blue-900/10 border-blue-200 dark:border-blue-800/50'
+          isHb
+            ? 'bg-cyan-50/20 dark:bg-cyan-900/10 border-cyan-200/30 dark:border-cyan-800/30'
+            : isRX 
+              ? 'bg-green-50/30 dark:bg-green-900/10 border-green-200 dark:border-green-800/50' 
+              : 'bg-blue-50/30 dark:bg-blue-900/10 border-blue-200 dark:border-blue-800/50'
         } hover:shadow-md hover:border-opacity-100`}
       >
         {/* 日志头部 - 始终显示 */}
         <div
-          className={`px-2 py-1.5 flex items-start gap-2 ${isJSON ? 'cursor-pointer' : ''}`}
-          onClick={() => isJSON && toggleExpand(log.id)}
+          className={`px-2 py-1 flex items-start gap-2 ${isJSON && !isHb ? 'cursor-pointer' : ''}`}
+          onClick={() => isJSON && !isHb && toggleExpand(log.id)}
         >
           {/* 时间戳 */}
           <span className="text-xs text-gray-400 dark:text-gray-500 font-mono whitespace-nowrap mt-0.5 select-none">
             {log.timestamp}
           </span>
           
-          {/* 方向标识 - 更明显的颜色 */}
+          {/* 方向标识 */}
           <span
             className={`text-xs font-bold px-2 py-0.5 rounded-full whitespace-nowrap shadow-sm ${
               isRX
@@ -150,24 +162,31 @@ const LogPanel: React.FC<LogPanelProps> = ({
           
           {/* 帧类型标签 */}
           {log.frameType && (
-            <span className={`text-xs font-semibold ${style.color} whitespace-nowrap px-1.5 py-0.5 rounded bg-opacity-20 ${style.bgColor}`}>
+            <span className={`text-xs font-semibold ${style.color} whitespace-nowrap px-1.5 py-0.5 rounded ${style.bgColor}`}>
               {log.frameType}
             </span>
           )}
           
-          {/* 简要信息 - JSON 时显示一行摘要 */}
-          <span className="text-xs text-gray-600 dark:text-gray-400 flex-1 truncate ml-1">
-            {isJSON ? (
-              <span className="opacity-70">
-                {log.frameType || '数据帧'} · {formatted.split('\n').length} 行
-              </span>
-            ) : (
-              <span className="font-mono text-gray-700 dark:text-gray-300">{log.data}</span>
-            )}
-          </span>
+          {/* 心跳包：只显示简要信息 */}
+          {isHb ? (
+            <span className="text-xs text-cyan-600 dark:text-cyan-400 flex-1 truncate ml-1">
+              💓 连接正常
+            </span>
+          ) : (
+            /* 其他包：显示详细信息 */
+            <span className="text-xs text-gray-600 dark:text-gray-400 flex-1 truncate ml-1">
+              {isJSON ? (
+                <span className="opacity-70">
+                  {log.frameType || '数据帧'} · {formatted.split('\n').length} 行
+                </span>
+              ) : (
+                <span className="font-mono text-gray-700 dark:text-gray-300">{log.data}</span>
+              )}
+            </span>
+          )}
           
           {/* 展开/折叠按钮 */}
-          {isJSON && (
+          {isJSON && !isHb && (
             <button
               className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors ml-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded px-1"
               onClick={(e) => { e.stopPropagation(); toggleExpand(log.id); }}
@@ -178,9 +197,9 @@ const LogPanel: React.FC<LogPanelProps> = ({
           )}
         </div>
         
-        {/* 日志详情 - 展开时显示 */}
-        {isExpanded && isJSON && (
-          <div className="px-2 pb-2 pt-0 animate-fadeIn">
+        {/* 日志详情 - 展开时显示（心跳包不展开） */}
+        {isExpanded && isJSON && !isHb && (
+          <div className="px-2 pb-2 pt-0">
             <pre className="text-xs bg-gray-100 dark:bg-gray-900 rounded-md p-3 overflow-x-auto font-mono whitespace-pre-wrap break-all text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 shadow-inner">
               {formatted}
             </pre>
@@ -199,6 +218,11 @@ const LogPanel: React.FC<LogPanelProps> = ({
           <span className="ml-2 px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-xs font-medium text-gray-600 dark:text-gray-400">
             {filteredLogs.length} / {logs.length} 条
           </span>
+          {hideHeartbeat && logs.some(l => isHeartbeat(l.frameType)) && (
+            <span className="text-xs text-cyan-500 dark:text-cyan-400">
+              💓 {logs.filter(l => isHeartbeat(l.frameType)).length} 条心跳已隐藏
+            </span>
+          )}
         </h3>
         <div className="flex gap-2">
           <button
@@ -220,8 +244,8 @@ const LogPanel: React.FC<LogPanelProps> = ({
 
       {/* 过滤和搜索选项 */}
       <div className="space-y-2">
-        {/* 方向过滤 */}
-        <div className="flex gap-2 flex-wrap">
+        {/* 方向过滤 + 心跳开关 */}
+        <div className="flex gap-2 flex-wrap items-center">
           <button
             onClick={() => setFilter('all')}
             className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${
@@ -252,6 +276,20 @@ const LogPanel: React.FC<LogPanelProps> = ({
           >
             📤 TX ({logs.filter(l => l.direction === 'TX').length})
           </button>
+          
+          {/* 心跳开关 */}
+          <button
+            onClick={() => setHideHeartbeat(!hideHeartbeat)}
+            className={`px-3 py-1 rounded-full text-xs font-medium transition-all border ${
+              hideHeartbeat
+                ? 'bg-cyan-50 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-300 border-cyan-300 dark:border-cyan-700 shadow-sm'
+                : 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 border-gray-200 dark:border-gray-700 hover:bg-gray-200 dark:hover:bg-gray-700'
+            }`}
+            title={hideHeartbeat ? '点击显示心跳包' : '点击隐藏心跳包'}
+          >
+            💓 {hideHeartbeat ? '已隐藏' : '显示中'}
+          </button>
+          
           <label className="ml-auto flex items-center gap-1 text-xs text-gray-500 cursor-pointer">
             <input
               type="checkbox"
@@ -306,6 +344,12 @@ const LogPanel: React.FC<LogPanelProps> = ({
                 <div>没有找到匹配的日志</div>
                 <div className="text-xs text-gray-400 mt-1">尝试使用其他关键词搜索</div>
               </div>
+            ) : hideHeartbeat && logs.some(l => isHeartbeat(l.frameType)) ? (
+              <div>
+                <div className="text-4xl mb-2">💓</div>
+                <div>心跳包已隐藏</div>
+                <div className="text-xs text-gray-400 mt-1">点击「💓 已隐藏」按钮可显示心跳包</div>
+              </div>
             ) : (
               <div>
                 <div className="text-4xl mb-2">📭</div>
@@ -331,6 +375,13 @@ const LogPanel: React.FC<LogPanelProps> = ({
             {logs.filter((l) => l.direction === 'TX').length}
           </span>
         </span>
+        {logs.some(l => isHeartbeat(l.frameType)) && (
+          <span className="flex items-center gap-1">
+            💓 心跳: <span className="text-cyan-600 dark:text-cyan-400 font-semibold">
+              {logs.filter(l => isHeartbeat(l.frameType)).length}
+            </span>
+          </span>
+        )}
         <span className="flex items-center gap-1">
           📊 已过滤: <span className="text-gray-700 dark:text-gray-300 font-semibold">{filteredLogs.length}</span>
         </span>
